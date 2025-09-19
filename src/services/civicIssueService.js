@@ -784,6 +784,91 @@ export const civicIssueService = {
     if (subscription) {
       supabase?.removeChannel(subscription);
     }
+  },
+
+  // Track complaint by ID and email
+  async trackComplaint(complaintId, email) {
+    try {
+      console.log('🔍 Tracking complaint:', complaintId, 'for email:', email);
+      
+      // First try to find by exact ID match
+      let query = supabase
+        .from('civic_issues')
+        .select(`
+          *,
+          issue_images(id, image_path, image_url, caption, created_at),
+          issue_updates(status, comment, created_at, is_public),
+          user_profiles!reporter_id(full_name, email)
+        `)
+        .eq('id', complaintId);
+
+      let { data: complaint, error } = await query.single();
+
+      // If not found by ID, try searching by title or other fields
+      if (error && error.code === 'PGRST116') {
+        console.log('🔍 Complaint not found by ID, searching by other criteria...');
+        
+        query = supabase
+          .from('civic_issues')
+          .select(`
+            *,
+            issue_images(id, image_path, image_url, caption, created_at),
+            issue_updates(status, comment, created_at, is_public),
+            user_profiles!reporter_id(full_name, email)
+          `)
+          .or(`title.ilike.%${complaintId}%,description.ilike.%${complaintId}%`)
+          .limit(10);
+
+        const { data: complaints, error: searchError } = await query;
+        
+        if (searchError) {
+          throw searchError;
+        }
+
+        // Find the best match by email
+        complaint = complaints?.find(c =>
+          c.reporter_email?.toLowerCase() === email.toLowerCase() ||
+          c.user_profiles?.email?.toLowerCase() === email.toLowerCase()
+        );
+
+        if (!complaint) {
+          return { data: null, error: 'Complaint not found' };
+        }
+      } else if (error) {
+        throw error;
+      }
+
+      // Verify email matches
+      const emailMatches =
+        complaint.reporter_email?.toLowerCase() === email.toLowerCase() ||
+        complaint.user_profiles?.email?.toLowerCase() === email.toLowerCase();
+
+      if (!emailMatches) {
+        return { data: null, error: 'Email does not match complaint records' };
+      }
+
+      // Process image URLs
+      if (complaint.issue_images) {
+        complaint.issue_images = complaint.issue_images.map(image => ({
+          ...image,
+          image_url: image.image_url || getImageUrl(image.image_path)
+        }));
+      }
+
+      // Filter public updates only
+      if (complaint.issue_updates) {
+        complaint.issue_updates = complaint.issue_updates
+          .filter(update => update.is_public)
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      }
+
+      console.log('✅ Complaint found and verified');
+      return { data: complaint, error: null };
+
+    } catch (error) {
+      console.error('❌ Error tracking complaint:', error);
+      return { data: null, error: error.message };
+    }
   }
 };
 

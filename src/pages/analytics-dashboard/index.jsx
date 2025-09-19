@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
 import Button from '../../components/ui/Button';
@@ -12,16 +12,34 @@ import DepartmentPerformanceChart from './components/DepartmentPerformanceChart'
 import GeographicHeatMap from './components/GeographicHeatMap';
 import DataTable from './components/DataTable';
 import DateRangeSelector from './components/DateRangeSelector';
+import analyticsService from '../../services/analyticsService';
 
 const AnalyticsDashboard = () => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [realTimeEnabled, setRealTimeEnabled] = useState(true);
   const [dateRange, setDateRange] = useState({
-    startDate: '2024-08-17',
-    endDate: '2024-09-17',
+    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0],
     range: '30d'
   });
   const [chartType, setChartType] = useState('line');
-  const [refreshTimestamp, setRefreshTimestamp] = useState(new Date()?.toLocaleString());
+  const [refreshTimestamp, setRefreshTimestamp] = useState(new Date().toLocaleString());
+  
+  // Real-time data state
+  const [analyticsData, setAnalyticsData] = useState({
+    metrics: [],
+    categories: [],
+    timeline: [],
+    departments: [],
+    geographic: [],
+    recentIssues: [],
+    lastUpdated: null,
+    error: null
+  });
+
+  // Real-time subscription ref
+  const subscriptionRef = useRef(null);
+  const refreshIntervalRef = useRef(null);
 
   // Mock current user for header
   const currentUser = {
@@ -29,87 +47,83 @@ const AnalyticsDashboard = () => {
     email: "admin@civicare.gov.in"
   };
 
-  // Mock metrics data
-  const metricsData = [
-    {
-      title: "Total Issues",
-      value: "2,847",
-      change: "+12.5%",
-      changeType: "increase",
-      icon: "AlertCircle",
-      description: "vs last month"
-    },
-    {
-      title: "Resolution Rate",
-      value: "87.3%",
-      change: "+5.2%",
-      changeType: "increase",
-      icon: "CheckCircle",
-      description: "issues resolved"
-    },
-    {
-      title: "Avg Response Time",
-      value: "4.2 days",
-      change: "-1.3 days",
-      changeType: "decrease",
-      icon: "Clock",
-      description: "faster than last month"
-    },
-    {
-      title: "Citizen Satisfaction",
-      value: "4.6/5",
-      change: "+0.3",
-      changeType: "increase",
-      icon: "Star",
-      description: "average rating"
-    }
-  ];
-
-  // Add mock data for chart components
-  const mockChartData = {
-    categories: [
-      { name: 'Roads & Transport', value: 450, percentage: 35 },
-      { name: 'Water Supply', value: 320, percentage: 25 },
-      { name: 'Sanitation', value: 280, percentage: 22 },
-      { name: 'Electricity', value: 150, percentage: 12 },
-      { name: 'Others', value: 80, percentage: 6 }
-    ],
-    timeline: [
-      { date: '2024-08-17', resolved: 45, pending: 12, total: 57 },
-      { date: '2024-08-24', resolved: 52, pending: 15, total: 67 },
-      { date: '2024-08-31', resolved: 48, pending: 8, total: 56 },
-      { date: '2024-09-07', resolved: 61, pending: 18, total: 79 },
-      { date: '2024-09-14', resolved: 55, pending: 10, total: 65 }
-    ],
-    departments: [
-      { name: 'Public Works', efficiency: 87, resolved: 234, total: 269 },
-      { name: 'Water Board', efficiency: 92, resolved: 195, total: 212 },
-      { name: 'Municipal Corp', efficiency: 78, resolved: 156, total: 200 },
-      { name: 'Transport Dept', efficiency: 85, resolved: 128, total: 151 }
-    ],
-    geographic: [
-      { region: 'North Zone', issues: 245, severity: 'medium' },
-      { region: 'South Zone', issues: 189, severity: 'high' },
-      { region: 'East Zone', issues: 167, severity: 'low' },
-      { region: 'West Zone', issues: 201, severity: 'medium' }
-    ]
-  };
-
-  const mockTableData = [
-    { id: 1, category: 'Roads', status: 'Resolved', priority: 'High', date: '2024-09-15', department: 'Public Works' },
-    { id: 2, category: 'Water', status: 'Pending', priority: 'Medium', date: '2024-09-14', department: 'Water Board' },
-    { id: 3, category: 'Sanitation', status: 'In Progress', priority: 'High', date: '2024-09-13', department: 'Municipal Corp' }
-  ];
-
-  const handleRefreshData = () => {
-    setLoading(true);
-    setRefreshTimestamp(new Date()?.toLocaleString());
-    
-    // Simulate API call
-    setTimeout(() => {
+  // Fetch analytics data
+  const fetchAnalyticsData = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log('📊 Fetching analytics data...');
+      
+      const data = await analyticsService.getAnalyticsData(dateRange);
+      
+      if (data.error) {
+        console.error('❌ Analytics data error:', data.error);
+        setAnalyticsData(prev => ({ ...prev, error: data.error }));
+      } else {
+        console.log('✅ Analytics data loaded successfully');
+        setAnalyticsData(data);
+        setRefreshTimestamp(new Date(data.lastUpdated).toLocaleString());
+      }
+    } catch (error) {
+      console.error('❌ Error fetching analytics data:', error);
+      setAnalyticsData(prev => ({ ...prev, error: error.message }));
+    } finally {
       setLoading(false);
-    }, 1500);
-  };
+    }
+  }, [dateRange]);
+
+  // Handle manual refresh
+  const handleRefreshData = useCallback(() => {
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
+
+  // Handle real-time data updates
+  const handleRealTimeUpdate = useCallback((payload) => {
+    console.log('🔄 Real-time update received:', payload.eventType);
+    
+    // Debounce updates to avoid too frequent refreshes
+    if (refreshIntervalRef.current) {
+      clearTimeout(refreshIntervalRef.current);
+    }
+    
+    refreshIntervalRef.current = setTimeout(() => {
+      fetchAnalyticsData();
+    }, 2000); // Wait 2 seconds before refreshing
+  }, [fetchAnalyticsData]);
+
+  // Setup real-time subscription
+  const setupRealTimeSubscription = useCallback(() => {
+    if (!realTimeEnabled) return;
+    
+    console.log('🔄 Setting up real-time analytics subscription...');
+    subscriptionRef.current = analyticsService.subscribeToAnalyticsChanges(handleRealTimeUpdate);
+  }, [realTimeEnabled, handleRealTimeUpdate]);
+
+  // Cleanup real-time subscription
+  const cleanupRealTimeSubscription = useCallback(() => {
+    if (subscriptionRef.current) {
+      console.log('🔄 Cleaning up real-time subscription...');
+      analyticsService.unsubscribeFromChanges(subscriptionRef.current);
+      subscriptionRef.current = null;
+    }
+    
+    if (refreshIntervalRef.current) {
+      clearTimeout(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+  }, []);
+
+  // Toggle real-time updates
+  const toggleRealTime = useCallback(() => {
+    setRealTimeEnabled(prev => {
+      const newState = !prev;
+      if (newState) {
+        setupRealTimeSubscription();
+      } else {
+        cleanupRealTimeSubscription();
+      }
+      return newState;
+    });
+  }, [setupRealTimeSubscription, cleanupRealTimeSubscription]);
 
   const handleExportChart = (chartName) => {
     console.log(`Exporting ${chartName} chart...`);
@@ -121,16 +135,32 @@ const AnalyticsDashboard = () => {
     // CSV export logic would be implemented here
   };
 
-  const handleDateRangeChange = (newRange) => {
+  const handleDateRangeChange = useCallback((newRange) => {
     setDateRange(newRange);
-    console.log('Date range changed:', newRange);
-    // Refresh data with new date range
-  };
+    console.log('📅 Date range changed:', newRange);
+  }, []);
 
+  // Effects
   useEffect(() => {
     // Initial data load
-    handleRefreshData();
-  }, []);
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
+
+  useEffect(() => {
+    // Setup real-time subscription
+    setupRealTimeSubscription();
+    
+    // Cleanup on unmount
+    return cleanupRealTimeSubscription;
+  }, [setupRealTimeSubscription, cleanupRealTimeSubscription]);
+
+  // Auto-refresh every 5 minutes when real-time is disabled
+  useEffect(() => {
+    if (!realTimeEnabled) {
+      const interval = setInterval(fetchAnalyticsData, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }
+  }, [realTimeEnabled, fetchAnalyticsData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -141,16 +171,40 @@ const AnalyticsDashboard = () => {
         {/* Page Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Analytics Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Analytics Dashboard
+              {realTimeEnabled && (
+                <span className="ml-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                  Live
+                </span>
+              )}
+            </h1>
             <p className="text-muted-foreground">
               Comprehensive insights into civic issue patterns and resolution performance
             </p>
+            {analyticsData.error && (
+              <p className="text-sm text-red-600 mt-1">
+                ⚠️ {analyticsData.error}
+              </p>
+            )}
           </div>
           
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-4 lg:mt-0">
             <DateRangeSelector onDateRangeChange={handleDateRangeChange} />
             
             <div className="flex space-x-2">
+              <Button
+                variant={realTimeEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={toggleRealTime}
+                iconName={realTimeEnabled ? "Zap" : "ZapOff"}
+                iconPosition="left"
+                iconSize={16}
+              >
+                {realTimeEnabled ? "Live" : "Manual"}
+              </Button>
+              
               <Button
                 variant="outline"
                 size="sm"
@@ -179,7 +233,7 @@ const AnalyticsDashboard = () => {
 
         {/* Key Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {metricsData?.map((metric, index) => (
+          {analyticsData.metrics?.map((metric, index) => (
             <MetricsCard
               key={index}
               title={metric?.title}
@@ -202,9 +256,16 @@ const AnalyticsDashboard = () => {
             onRefresh={handleRefreshData}
             loading={loading}
             lastUpdated={refreshTimestamp}
-            controls={null}
+            controls={
+              realTimeEnabled && (
+                <div className="flex items-center text-xs text-green-600">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                  Real-time
+                </div>
+              )
+            }
           >
-            <IssuesByCategoryChart loading={loading} data={mockChartData.categories} />
+            <IssuesByCategoryChart loading={loading} data={analyticsData.categories} />
           </ChartContainer>
 
           {/* Resolution Timeline */}
@@ -216,6 +277,12 @@ const AnalyticsDashboard = () => {
             lastUpdated={refreshTimestamp}
             controls={
               <div className="flex items-center space-x-2">
+                {realTimeEnabled && (
+                  <div className="flex items-center text-xs text-green-600 mr-2">
+                    <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                    Real-time
+                  </div>
+                )}
                 <Button
                   variant={chartType === 'line' ? 'default' : 'ghost'}
                   size="sm"
@@ -233,7 +300,7 @@ const AnalyticsDashboard = () => {
               </div>
             }
           >
-            <ResolutionTimelineChart chartType={chartType} loading={loading} data={mockChartData.timeline} />
+            <ResolutionTimelineChart chartType={chartType} loading={loading} data={analyticsData.timeline} />
           </ChartContainer>
         </div>
 
@@ -245,9 +312,16 @@ const AnalyticsDashboard = () => {
             onRefresh={handleRefreshData}
             loading={loading}
             lastUpdated={refreshTimestamp}
-            controls={null}
+            controls={
+              realTimeEnabled && (
+                <div className="flex items-center text-xs text-green-600">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                  Real-time
+                </div>
+              )
+            }
           >
-            <DepartmentPerformanceChart loading={loading} data={mockChartData.departments} />
+            <DepartmentPerformanceChart loading={loading} data={analyticsData.departments} />
           </ChartContainer>
 
           <ChartContainer
@@ -256,15 +330,27 @@ const AnalyticsDashboard = () => {
             onRefresh={handleRefreshData}
             loading={loading}
             lastUpdated={refreshTimestamp}
-            controls={null}
+            controls={
+              realTimeEnabled && (
+                <div className="flex items-center text-xs text-green-600">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                  Real-time
+                </div>
+              )
+            }
           >
-            <GeographicHeatMap loading={loading} data={mockChartData.geographic} />
+            <GeographicHeatMap loading={loading} data={analyticsData.geographic} />
           </ChartContainer>
         </div>
 
         {/* Detailed Data Table */}
         <div className="mb-8">
-          <DataTable loading={loading} onExport={handleExportData} data={mockTableData} />
+          <DataTable
+            loading={loading}
+            onExport={handleExportData}
+            data={analyticsData.recentIssues}
+            realTime={realTimeEnabled}
+          />
         </div>
 
         {/* Quick Actions */}
@@ -323,10 +409,22 @@ const AnalyticsDashboard = () => {
         {/* Footer Info */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>
-            Data updated every 15 minutes • Last refresh: {refreshTimestamp}
+            {realTimeEnabled ? (
+              <>
+                <span className="inline-flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                  Real-time updates enabled
+                </span>
+                {analyticsData.lastUpdated && (
+                  <> • Last updated: {new Date(analyticsData.lastUpdated).toLocaleString()}</>
+                )}
+              </>
+            ) : (
+              <>Auto-refresh every 5 minutes • Last refresh: {refreshTimestamp}</>
+            )}
           </p>
           <p className="mt-1">
-            © {new Date()?.getFullYear()} Civicare Analytics Dashboard. All rights reserved.
+            © {new Date().getFullYear()} Civicare Analytics Dashboard. All rights reserved.
           </p>
         </div>
       </main>

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
 
-const DataTable = ({ data, loading = false, onExport }) => {
+const DataTable = ({ data, loading = false, onExport, realTime = false }) => {
   const [sortField, setSortField] = useState('date');
   const [sortDirection, setSortDirection] = useState('desc');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -10,65 +10,29 @@ const DataTable = ({ data, loading = false, onExport }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const mockData = data || [
+  // Process real data or use fallback
+  const processedData = data && data.length > 0 ? data.map(item => ({
+    id: item.id || `ISS-${Date.now()}`,
+    category: item.category || 'Unknown',
+    title: item.title || 'No title',
+    location: item.address || item.location || 'Unknown',
+    status: item.status || 'pending',
+    priority: item.priority || 'medium',
+    reportedDate: item.date || item.created_at || new Date().toISOString().split('T')[0],
+    resolvedDate: item.resolved_at || null,
+    department: item.department || 'Unassigned',
+    resolutionTime: item.resolutionTime || null
+  })) : [
     {
-      id: 'ISS-2024-001',
-      category: 'Roads & Infrastructure',
-      title: 'Pothole on Main Street',
-      location: 'Downtown',
-      status: 'resolved',
-      priority: 'high',
-      reportedDate: '2024-09-15',
-      resolvedDate: '2024-09-16',
-      department: 'Roads & Transport',
-      resolutionTime: 1
-    },
-    {
-      id: 'ISS-2024-002',
-      category: 'Waste Management',
-      title: 'Garbage collection delay',
-      location: 'Residential Area A',
-      status: 'in-progress',
-      priority: 'medium',
-      reportedDate: '2024-09-14',
-      resolvedDate: null,
-      department: 'Waste Management',
-      resolutionTime: null
-    },
-    {
-      id: 'ISS-2024-003',
-      category: 'Street Lighting',
-      title: 'Broken streetlight',
-      location: 'Park Avenue',
+      id: 'No data available',
+      category: '-',
+      title: 'No issues found',
+      location: '-',
       status: 'pending',
       priority: 'low',
-      reportedDate: '2024-09-13',
+      reportedDate: new Date().toISOString().split('T')[0],
       resolvedDate: null,
-      department: 'Electrical',
-      resolutionTime: null
-    },
-    {
-      id: 'ISS-2024-004',
-      category: 'Water Supply',
-      title: 'Water leak in pipeline',
-      location: 'Commercial District',
-      status: 'resolved',
-      priority: 'high',
-      reportedDate: '2024-09-12',
-      resolvedDate: '2024-09-14',
-      department: 'Water & Sanitation',
-      resolutionTime: 2
-    },
-    {
-      id: 'ISS-2024-005',
-      category: 'Public Safety',
-      title: 'Damaged road sign',
-      location: 'Industrial Zone',
-      status: 'assigned',
-      priority: 'medium',
-      reportedDate: '2024-09-11',
-      resolvedDate: null,
-      department: 'Public Works',
+      department: '-',
       resolutionTime: null
     }
   ];
@@ -93,7 +57,7 @@ const DataTable = ({ data, loading = false, onExport }) => {
   };
 
   const filteredAndSortedData = useMemo(() => {
-    let filtered = mockData;
+    let filtered = processedData;
 
     if (filterCategory !== 'all') {
       filtered = filtered?.filter(item => item?.category === filterCategory);
@@ -118,7 +82,7 @@ const DataTable = ({ data, loading = false, onExport }) => {
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [filterCategory, filterStatus, sortField, sortDirection]);
+  }, [processedData, filterCategory, filterStatus, sortField, sortDirection]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -136,8 +100,8 @@ const DataTable = ({ data, loading = false, onExport }) => {
     }
   };
 
-  const categories = ['all', ...new Set(mockData.map(item => item.category))];
-  const statuses = ['all', 'pending', 'assigned', 'in-progress', 'resolved'];
+  const categories = ['all', ...new Set(processedData.map(item => item.category))];
+  const statuses = ['all', 'pending', 'submitted', 'assigned', 'in_progress', 'resolved'];
 
   if (loading) {
     return (
@@ -159,7 +123,15 @@ const DataTable = ({ data, loading = false, onExport }) => {
       {/* Header with filters */}
       <div className="p-4 border-b border-border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h3 className="text-lg font-semibold text-card-foreground">Detailed Analytics</h3>
+          <div className="flex items-center space-x-3">
+            <h3 className="text-lg font-semibold text-card-foreground">Recent Issues</h3>
+            {realTime && (
+              <div className="flex items-center text-xs text-green-600">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></div>
+                Real-time
+              </div>
+            )}
+          </div>
           
           <div className="flex flex-col sm:flex-row gap-3">
             <select
@@ -181,7 +153,7 @@ const DataTable = ({ data, loading = false, onExport }) => {
             >
               {statuses?.map(status => (
                 <option key={status} value={status}>
-                  {status === 'all' ? 'All Status' : status?.charAt(0)?.toUpperCase() + status?.slice(1)}
+                  {status === 'all' ? 'All Status' : status?.replace('_', ' ')?.charAt(0)?.toUpperCase() + status?.replace('_', ' ')?.slice(1)}
                 </option>
               ))}
             </select>
@@ -249,7 +221,7 @@ const DataTable = ({ data, loading = false, onExport }) => {
                 </td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(item?.status)}`}>
-                    {item?.status}
+                    {item?.status?.replace('_', ' ')}
                   </span>
                 </td>
                 <td className="px-4 py-3">
@@ -258,7 +230,7 @@ const DataTable = ({ data, loading = false, onExport }) => {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
-                  {new Date(item.reportedDate)?.toLocaleDateString()}
+                  {item.reportedDate ? new Date(item.reportedDate)?.toLocaleDateString() : '-'}
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">
                   {item?.resolutionTime ? `${item?.resolutionTime} days` : '-'}

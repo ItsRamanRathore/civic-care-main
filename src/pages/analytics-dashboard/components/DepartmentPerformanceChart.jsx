@@ -2,50 +2,25 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const DepartmentPerformanceChart = ({ data, loading = false }) => {
-  const mockData = data || [
-    { 
-      department: 'Roads & Transport', 
-      assigned: 156, 
-      completed: 142, 
-      pending: 14,
-      avgResolutionTime: 4.2
-    },
-    { 
-      department: 'Water & Sanitation', 
-      assigned: 134, 
-      completed: 128, 
-      pending: 6,
-      avgResolutionTime: 3.8
-    },
-    { 
-      department: 'Waste Management', 
-      assigned: 98, 
-      completed: 89, 
-      pending: 9,
-      avgResolutionTime: 5.1
-    },
-    { 
-      department: 'Public Works', 
-      assigned: 87, 
-      completed: 81, 
-      pending: 6,
-      avgResolutionTime: 6.3
-    },
-    { 
-      department: 'Electrical', 
-      assigned: 76, 
-      completed: 72, 
-      pending: 4,
-      avgResolutionTime: 2.9
-    },
-    { 
-      department: 'Parks & Recreation', 
-      assigned: 45, 
-      completed: 43, 
-      pending: 2,
-      avgResolutionTime: 7.2
-    }
-  ];
+  // Process real data or use fallback
+  const chartData = data && data.length > 0 ?
+    data.map(item => ({
+      department: item.name || 'Unknown',
+      assigned: item.total || 0,
+      completed: item.resolved || 0,
+      pending: (item.total || 0) - (item.resolved || 0),
+      efficiency: item.efficiency || 0,
+      avgResolutionTime: item.avgResolutionTime || 0
+    })) : [
+      {
+        department: 'No Data',
+        assigned: 0,
+        completed: 0,
+        pending: 0,
+        efficiency: 0,
+        avgResolutionTime: 0
+      }
+    ];
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload?.length) {
@@ -55,7 +30,7 @@ const DepartmentPerformanceChart = ({ data, loading = false }) => {
           <p className="font-medium text-popover-foreground mb-2">{label}</p>
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">
-              Assigned: <span className="font-medium text-popover-foreground">{data?.assigned}</span>
+              Total Issues: <span className="font-medium text-popover-foreground">{data?.assigned}</span>
             </p>
             <p className="text-sm text-muted-foreground">
               Completed: <span className="font-medium text-success">{data?.completed}</span>
@@ -64,13 +39,13 @@ const DepartmentPerformanceChart = ({ data, loading = false }) => {
               Pending: <span className="font-medium text-accent">{data?.pending}</span>
             </p>
             <p className="text-sm text-muted-foreground">
-              Avg Resolution: <span className="font-medium text-popover-foreground">{data?.avgResolutionTime} days</span>
+              Efficiency: <span className="font-medium text-popover-foreground">{data?.efficiency}%</span>
             </p>
-            <p className="text-sm text-muted-foreground">
-              Success Rate: <span className="font-medium text-popover-foreground">
-                {((data?.completed / data?.assigned) * 100)?.toFixed(1)}%
-              </span>
-            </p>
+            {data?.avgResolutionTime > 0 && (
+              <p className="text-sm text-muted-foreground">
+                Avg Resolution: <span className="font-medium text-popover-foreground">{data?.avgResolutionTime} days</span>
+              </p>
+            )}
           </div>
         </div>
       );
@@ -93,7 +68,7 @@ const DepartmentPerformanceChart = ({ data, loading = false }) => {
     <div className="h-80">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={mockData}
+          data={chartData}
           margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#E9ECEF" />

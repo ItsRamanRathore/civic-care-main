@@ -5,14 +5,18 @@ import Button from '../../../components/ui/Button';
 const GeographicHeatMap = ({ data, loading = false }) => {
   const [selectedArea, setSelectedArea] = useState(null);
 
-  const mockAreas = data || [
-    { id: 1, name: 'Downtown', issues: 89, lat: 28.6139, lng: 77.2090, severity: 'high' },
-    { id: 2, name: 'Commercial District', issues: 67, lat: 28.6304, lng: 77.2177, severity: 'medium' },
-    { id: 3, name: 'Residential Area A', issues: 45, lat: 28.5355, lng: 77.3910, severity: 'medium' },
-    { id: 4, name: 'Industrial Zone', issues: 34, lat: 28.7041, lng: 77.1025, severity: 'low' },
-    { id: 5, name: 'Suburban Area', issues: 23, lat: 28.4595, lng: 77.0266, severity: 'low' },
-    { id: 6, name: 'Old City', issues: 78, lat: 28.6507, lng: 77.2334, severity: 'high' }
-  ];
+  // Process real data or use fallback
+  const geographicAreas = data && data.length > 0 ?
+    data.map((item, index) => ({
+      id: index + 1,
+      name: item.region || 'Unknown Area',
+      issues: item.issues || 0,
+      lat: 28.6139 + (index * 0.05), // Mock coordinates for visualization
+      lng: 77.2090 + (index * 0.05),
+      severity: item.severity || 'low'
+    })) : [
+      { id: 1, name: 'No Data Available', issues: 0, lat: 28.6139, lng: 77.2090, severity: 'low' }
+    ];
 
   const getSeverityColor = (severity) => {
     switch (severity) {
@@ -59,13 +63,13 @@ const GeographicHeatMap = ({ data, loading = false }) => {
         
         {/* Overlay with area markers */}
         <div className="absolute inset-0 pointer-events-none">
-          {mockAreas?.map((area) => (
+          {geographicAreas?.map((area) => (
             <div
               key={area?.id}
               className={`absolute w-4 h-4 rounded-full ${getSeverityColor(area?.severity)} opacity-70 pointer-events-auto cursor-pointer hover:opacity-90 transition-smooth`}
               style={{
-                left: `${20 + (area?.id * 15)}%`,
-                top: `${30 + (area?.id * 8)}%`
+                left: `${20 + (area?.id * 12)}%`,
+                top: `${30 + (area?.id * 10)}%`
               }}
               onClick={() => setSelectedArea(area)}
               title={`${area?.name}: ${area?.issues} issues`}
@@ -122,7 +126,7 @@ const GeographicHeatMap = ({ data, loading = false }) => {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {mockAreas?.slice(0, 3)?.map((area) => (
+              {geographicAreas?.slice(0, 3)?.map((area) => (
                 <div key={area?.id} className="text-center">
                   <p className="text-sm font-medium text-popover-foreground">{area?.name}</p>
                   <p className={`text-xs ${getSeverityTextColor(area?.severity)}`}>

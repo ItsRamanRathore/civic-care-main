@@ -6,6 +6,7 @@ import HeroSection from './components/HeroSection';
 import RecentReportsSection from './components/RecentReportsSection';
 import StatsSection from './components/StatsSection';
 import TrustSignalsSection from './components/TrustSignalsSection';
+import ComplaintTrackingSection from './components/ComplaintTrackingSection';
 
 const PublicLandingPage = () => {
   // Mock current user data - in real app this would come from auth context
@@ -31,6 +32,7 @@ const PublicLandingPage = () => {
       />
       <main className="w-full">
         <HeroSection />
+        <ComplaintTrackingSection />
         <RecentReportsSection />
         <StatsSection />
         <TrustSignalsSection />

@@ -2,14 +2,19 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 const IssuesByCategoryChart = ({ data, loading = false }) => {
-  const mockData = data || [
-    { name: 'Roads & Infrastructure', value: 342, color: '#0D1B2A' },
-    { name: 'Waste Management', value: 287, color: '#415A77' },
-    { name: 'Water Supply', value: 156, color: '#778DA9' },
-    { name: 'Street Lighting', value: 98, color: '#E0E1DD' },
-    { name: 'Public Safety', value: 67, color: '#E63946' },
-    { name: 'Others', value: 45, color: '#F1FAEE' }
-  ];
+  // Color palette for categories
+  const colors = ['#0D1B2A', '#415A77', '#778DA9', '#E0E1DD', '#E63946', '#F1FAEE', '#2A9D8F', '#E76F51'];
+  
+  // Process real data or use fallback
+  const chartData = data && data.length > 0 ?
+    data.map((item, index) => ({
+      name: item.name,
+      value: item.value,
+      percentage: item.percentage,
+      color: colors[index % colors.length]
+    })) : [
+      { name: 'No Data Available', value: 1, color: '#E0E1DD' }
+    ];
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload?.length) {
@@ -22,7 +27,7 @@ const IssuesByCategoryChart = ({ data, loading = false }) => {
           </p>
           <p className="text-sm text-muted-foreground">
             Percentage: <span className="font-medium text-popover-foreground">
-              {((data?.value / mockData?.reduce((sum, item) => sum + item?.value, 0)) * 100)?.toFixed(1)}%
+              {data?.payload?.percentage || ((data?.value / chartData?.reduce((sum, item) => sum + item?.value, 0)) * 100)?.toFixed(1)}%
             </span>
           </p>
         </div>
@@ -63,7 +68,7 @@ const IssuesByCategoryChart = ({ data, loading = false }) => {
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
-            data={mockData}
+            data={chartData}
             cx="50%"
             cy="50%"
             innerRadius={60}
@@ -71,7 +76,7 @@ const IssuesByCategoryChart = ({ data, loading = false }) => {
             paddingAngle={2}
             dataKey="value"
           >
-            {mockData?.map((entry, index) => (
+            {chartData?.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry?.color} />
             ))}
           </Pie>
