@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
+import Icon from '../../components/AppIcon';
 import ModernHeader from '../../components/ui/ModernHeader';
 import ModernHeroSection from './components/ModernHeroSection';
 import ModernStatsSection from './components/ModernStatsSection';
