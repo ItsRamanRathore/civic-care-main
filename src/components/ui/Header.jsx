@@ -16,7 +16,7 @@ const Header = () => {
   const handleSignOut = async () => {
     try {
       await signOut();
-      navigate('/public-landing-page');
+      navigate('/');
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -28,7 +28,7 @@ const Header = () => {
   const isActive = (path) => location?.pathname === path;
   
   const navigationItems = [
-    { path: '/public-landing-page', label: t('home'), icon: 'Home' },
+    { path: '/', label: t('home'), icon: 'Home' },
     { path: '/public-reports-listing', label: t('browseIssues'), icon: 'FileText' },
     { path: '/interactive-issue-map', label: t('issueMap'), icon: 'Map' },
     { path: '/issue-reporting-form', label: t('reportIssue'), icon: 'Plus' },
@@ -43,7 +43,7 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/public-landing-page" className="flex items-center space-x-3">
+          <Link to="/" className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Icon name="Shield" size={18} color="white" />
             </div>

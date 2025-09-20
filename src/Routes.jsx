@@ -35,8 +35,8 @@ const Routes = () => {
               <RouterRoutes>
             {/* Public Routes */}
             <Route path="/" element={<ModernLandingPage />} />
-            <Route path="/public-landing-page" element={<PublicLandingPage />} />
-            <Route path="/original" element={<PublicLandingPage />} />
+            <Route path="/landing" element={<ModernLandingPage />} />
+            <Route path="/original-landing" element={<PublicLandingPage />} />
             <Route path="/public-reports-listing" element={<PublicReportsListing />} />
             <Route path="/interactive-issue-map" element={<InteractiveIssueMap />} />
             <Route path="/issue/:id" element={<IssueDetail />} />
