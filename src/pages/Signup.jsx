@@ -182,7 +182,7 @@ const Signup = () => {
               if (userRole === 'admin' || userRole === 'department_manager') {
                 navigate('/admin-dashboard');
               } else {
-                navigate('/public-landing-page');
+                navigate('/');
               }
             }, 2000);
           }

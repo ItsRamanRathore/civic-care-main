@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
+import { Link } from 'react-router-dom';
 import Icon from '../../components/AppIcon';
 import ModernHeader from '../../components/ui/ModernHeader';
 import RecentReportsSection from './components/RecentReportsSection';
@@ -78,14 +79,14 @@ const ModernLandingPage = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-20">
-              <button className="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-3">
+              <Link to="/issue-reporting-form" className="bg-red-600 hover:bg-red-700 text-white px-10 py-5 rounded-xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-3">
                 <Icon name="Plus" size={22} />
                 <span>{t('reportIssue')}</span>
-              </button>
-              <button className="bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-10 py-5 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-3">
+              </Link>
+              <Link to="/public-reports-listing" className="bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-10 py-5 rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-3">
                 <Icon name="Search" size={22} />
                 <span>{t('browseIssues')}</span>
-              </button>
+              </Link>
             </div>
 
             {/* Feature Icons */}
@@ -182,14 +183,14 @@ const ModernLandingPage = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
+              <Link to="/faq" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
                 <Icon name="Play" size={20} />
                 <span>{t('watchDemo', 'Watch Demo')}</span>
-              </button>
-              <button className="bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 flex items-center space-x-2">
+              </Link>
+              <Link to="/faq" className="bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 flex items-center space-x-2">
                 <Icon name="BookOpen" size={20} />
                 <span>{t('learnMore', 'Learn More')}</span>
-              </button>
+              </Link>
             </div>
           </div>
         </section>

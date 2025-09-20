@@ -25,7 +25,6 @@ const ModernHeader = ({ currentUser, notificationCount = 0 }) => {
     { name: t('home'), path: '/', icon: 'Home' },
     { name: t('reports'), path: '/public-reports-listing', icon: 'FileText' },
     { name: t('howItWorks', 'How It Works'), path: '/faq', icon: 'HelpCircle' },
-    { name: t('impact', 'Impact'), path: '/', icon: 'TrendingUp' },
     { name: t('analytics'), path: '/analytics-dashboard', icon: 'BarChart3' },
     { name: t('support', 'Support'), path: '/faq', icon: 'MessageCircle' }
   ];
@@ -45,12 +44,14 @@ const ModernHeader = ({ currentUser, notificationCount = 0 }) => {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-105">
-              <Icon name="Shield" size={20} className="text-white" />
-            </div>
+            <img
+              src="/assets/images/civic-care-logo.png"
+              alt="Civic Care Logo"
+              className="w-10 h-10 object-contain group-hover:scale-105 transition-all duration-300"
+            />
             <div className="hidden sm:block">
               <h1 className="font-bold text-xl text-gray-900">
-                {t('civicare')}
+                Civic Care
               </h1>
               <p className="text-xs text-gray-600">
                 {t('civicReportingPlatform')}
